@@ -27,7 +27,6 @@ Rails looks for variant templates using this naming convention:
 ```
 app/views/dashboard/show.html.erb           # default
 app/views/dashboard/show.html+v2.erb        # variant :v2
-app/views/dashboard/show.html+v3.erb        # variant :v3
 app/views/dashboard/show.html+redesign.erb  # variant :redesign
 ```
 
@@ -38,10 +37,8 @@ This works for layouts, partials, mailers, and ViewComponent templates too.
 ```
 /dashboard           # renders show.html.erb
 /dashboard?vv=v2     # renders show.html+v2.erb
-/dashboard?vv=v3     # renders show.html+v3.erb
+/dashboard?vv=true   # renders default, but activates the switcher
 ```
-
-The variant persists across navigation via `default_url_options`, so all internal links maintain the current variant.
 
 ### 3. Add the Variant Switcher (Optional)
 
@@ -51,13 +48,12 @@ Drop the built-in switcher widget in your layout:
 <%= variant_switcher %>
 ```
 
-Or render it directly:
+The switcher automatically detects available variants by scanning the view directory for `+variant` template files. It only appears when:
+- The `vv` param is present in the URL (e.g., `?vv=true` or `?vv=v2`)
+- The current action has variant templates available
+- The user can preview variants (dev/test by default)
 
-```erb
-<%= render "action_version_preview/variant_switcher" %>
-```
-
-This shows a fixed-position widget in the bottom-right corner letting you switch between variants.
+Standard Rails variants (`mobile`, `tablet`, `phone`, `desktop`) are excluded from detection.
 
 ## Configuration
 
@@ -68,9 +64,6 @@ Zero config is the default. But if you need to customize:
 ActionVersionPreview.configure do |config|
   # Change the URL parameter (default: :vv)
   config.param_name = :v
-
-  # Customize allowed variants (default: %w[v2 v3 redesign])
-  config.allowed_variants = %w[v2 v3 v4 beta redesign minimal]
 
   # Control who can preview variants (default: dev/test only)
   # In production, you might want admins only:
@@ -89,7 +82,8 @@ These are available in controllers and views:
 | Method | Description |
 |--------|-------------|
 | `current_variant` | Returns the active variant symbol (e.g., `:v2`) or `nil` |
-| `available_variants` | Returns array of allowed variant names |
+| `detected_variants` | Returns array of variant names found for current action |
+| `variant_preview_active?` | Returns true if variant preview mode is active |
 | `can_preview_variants?` | Returns true if current user can access variants |
 | `variant_switcher` | Renders the switcher widget |
 
@@ -99,10 +93,9 @@ Under the hood, ActionVersionPreview sets `request.variant` based on the URL par
 
 When you visit `/dashboard?vv=v2`:
 1. The `before_action` extracts `vv=v2` from params
-2. It validates the variant is allowed
-3. It sets `request.variant = :v2`
-4. Rails renders `show.html+v2.erb` instead of `show.html.erb`
-5. `default_url_options` adds `?vv=v2` to all generated URLs
+2. It sets `request.variant = :v2`
+3. Rails renders `show.html+v2.erb` instead of `show.html.erb`
+4. The switcher detects all `show.html+*.erb` variants in the view directory
 
 ## Comparison: Feature Flags vs View Variants
 
