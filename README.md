@@ -8,6 +8,8 @@ Feature flag gems like Flipper are designed for toggling features on/off for use
 
 ActionVersionPreview makes this trivial using Rails' native view variants.
 
+<img width="2146" height="2014" alt="image" src="https://github.com/user-attachments/assets/c39b1305-ad14-4958-be39-d714d53d1990" />
+
 ## Installation
 
 Add to your Gemfile:
