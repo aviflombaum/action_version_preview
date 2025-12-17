@@ -1,0 +1,13 @@
+<% if can_preview_variants? %>
+  <div style="position: fixed; bottom: 1rem; right: 1rem; background: #18181b; color: white; padding: 0.75rem; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); z-index: 9999; font-size: 0.875rem; font-family: system-ui, -apple-system, sans-serif;">
+    <span style="color: #a1a1aa; margin-right: 0.5rem;">View:</span>
+    <%= link_to "Default",
+        url_for(request.params.except(ActionVersionPreview.param_name.to_s, ActionVersionPreview.param_name.to_sym)),
+        style: "padding: 0.25rem 0.5rem; border-radius: 0.25rem; text-decoration: none; color: white; #{current_variant.nil? ? 'background: #2563eb;' : ''}" %>
+    <% available_variants.each do |variant| %>
+      <%= link_to variant.upcase,
+          url_for(request.params.merge(ActionVersionPreview.param_name => variant)),
+          style: "padding: 0.25rem 0.5rem; border-radius: 0.25rem; text-decoration: none; color: white; #{current_variant.to_s == variant ? 'background: #2563eb;' : ''}" %>
+    <% end %>
+  </div>
+<% end %>
