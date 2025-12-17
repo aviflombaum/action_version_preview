@@ -16,15 +16,7 @@ Add to your Gemfile:
 gem "action_version_preview"
 ```
 
-Then include the concern in your ApplicationController:
-
-```ruby
-class ApplicationController < ActionController::Base
-  include ActionVersionPreview::ControllerMethods
-end
-```
-
-That's it. You're done.
+Run `bundle install`. That's it. The concern is automatically included in all controllers.
 
 ## Usage
 
