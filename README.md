@@ -10,6 +10,8 @@ ActionVersionPreview makes this trivial using Rails' native view variants.
 
 <img width="2146" height="2014" alt="image" src="https://github.com/user-attachments/assets/c39b1305-ad14-4958-be39-d714d53d1990" />
 
+[Read more about why I built this...](https://code.avi.nyc/design-previews-for-ruby-on-rails)
+
 ## Installation
 
 Add to your Gemfile:
