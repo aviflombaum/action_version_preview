@@ -7,7 +7,12 @@ module ActionVersionPreview
     initializer "action_version_preview.controller_methods" do
       ActiveSupport.on_load(:action_controller_base) do
         include ActionVersionPreview::ControllerMethods
-        helper ActionVersionPreview::Engine.helpers
+      end
+    end
+
+    initializer "action_version_preview.helpers", after: :load_config_initializers do
+      ActiveSupport.on_load(:action_view) do
+        include ActionVersionPreview::SwitcherHelper
       end
     end
   end
