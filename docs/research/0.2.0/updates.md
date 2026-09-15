@@ -4,7 +4,7 @@ Reviewed: 2026-09-15
 Source revision: `12d2743e7ab144eb76eaefa64fe4e0716ea53186`  
 Scope: the complete gem implementation, gemspec, current dependency resolution, tests, dummy application, CI, README, changelog, and feature suggestions.
 
-This is a research and implementation backlog. The first-priority helper-loading fix has now been implemented locally for 0.2.0, as recorded below; the remaining recommendations have not been applied. The working tree already contained changes to `Gemfile.lock`; this review used and preserved that resolution.
+This is a research and implementation backlog. The first-priority helper-loading fix and item 1 (safe switcher URLs) have been implemented locally for 0.2.0, as recorded below; the other recommendations remain backlog items. The working tree already contained changes to `Gemfile.lock`; this review used and preserved that resolution.
 
 ## Summary
 
@@ -24,7 +24,7 @@ First priority for 0.2.0: fix and regression-test the published 0.1.0 helper-loa
 
 P1 means address before releasing the affected functionality. P2 means a correctness, compatibility, or meaningful coverage gap. P3 means a useful improvement that need not block the release.
 
-## Validation performed
+## Validation performed at initial review
 
 Environment: Ruby **4.0.5**, Bundler **2.7.2**, Rails **8.1.3.1**, macOS arm64. These results do not establish compatibility with every version allowed by the gemspec.
 
@@ -78,16 +78,17 @@ Implemented via [the load-order plan](../../plans/2026-09-15-fix-helper-load-ord
 
 The helper now lives in `lib/action_version_preview/switcher_helper.rb` and is explicitly required by the engine before hooks are registered. It remains a stable module across development reloads. Fresh-process tests cover early and lazy framework loading, rendering after reload, and a built/installed gem's production asset-precompile task with `SECRET_KEY_BASE_DUMMY=1`. The host renders the real engine partial with `include_all_helpers = false`, and package checks verify the engine and helper originate in the installed payload.
 
-The full suite now contains 18 tests and 45 assertions. Normal and CI/eager-loading runs pass, as do RuboCop and the Zeitwerk check. This validates the local implementation on Ruby 4.0.5 / Rails 8.1.3.1; PostMoney's full Docker build and the broader compatibility matrix remain unrun. No release has been published.
+After the load-order fix, the full suite contained 18 tests and 45 assertions. Normal and CI/eager-loading runs pass, as do RuboCop and the Zeitwerk check. This validates the local implementation on Ruby 4.0.5 / Rails 8.1.3.1; PostMoney's full Docker build and the broader compatibility matrix remain unrun. No release has been published.
 
-This first-priority implementation is complete locally. The remaining recommendations below are still the 0.2.0 backlog.
+This first-priority implementation is complete locally. Subsequent implementation progress is recorded under the relevant backlog items below.
 
 ## 1. Build switcher URLs from the current path and query data
 
-**Priority: P1 — confirmed.**  
-Source: `app/views/action_version_preview/_variant_switcher.html.erb:5` and `:9`.
+**Priority: P1 — confirmed. Implemented locally; pending 0.2.0 release.**
 
-Both links pass `request.params` directly into `url_for`. Rails interprets keys such as `host`, `protocol`, and `script_name` as URL-generation options. They do not remain ordinary filter values. This matches the documented [Rails URL-generation options](https://api.rubyonrails.org/classes/ActionDispatch/Routing/UrlFor.html).
+Original source: `app/views/action_version_preview/_variant_switcher.html.erb:5` and `:9`.
+
+At review time, both links passed `request.params` directly into `url_for`. Rails interprets keys such as `host`, `protocol`, and `script_name` as URL-generation options. They do not remain ordinary filter values. This matches the documented [Rails URL-generation options](https://api.rubyonrails.org/classes/ActionDispatch/Routing/UrlFor.html).
 
 With the switcher rendered, the following request:
 
@@ -108,6 +109,12 @@ V2       -> https://attacker.example/posts?vv=v2
 **Recommended change:** move URL construction into a focused helper. Preserve the current local request path, encode `request.query_parameters` as query data, and replace/remove only the configured preview key. Do not pass arbitrary query keys as routing options. Preserve mounted-application prefixes and nested query values. Avoid including POST bodies in generated GET URLs: `request.params` also contains body and routing parameters.
 
 **Tests worth writing:** malicious URL-option keys cannot change origin/path; nested filters and pagination survive; the configured preview key appears once; mounted paths survive; body fields do not leak into links when rendering a form response. Assert parsed URLs and query hashes rather than query-string ordering.
+
+### Implementation update
+
+Implemented on `release-0-2-0/safe-switcher-urls` using [the safe-URL plan](../../plans/2026-09-15-safe-switcher-urls.md). Both links now call a private helper that preserves `request.path` and encodes only `request.query_parameters`, replacing/removing the configured preview key. Query keys cannot become routing options, body fields are excluded, and Default retains its existing behavior.
+
+Three integration tests cover hostile URL-option keys and nested filters, string/symbol parameter configuration with a mounted prefix, and POST-body exclusion. The dummy layout now renders the switcher. The full suite passes with 21 tests and 101 assertions, including the installed-gem boot/precompile regression; RuboCop reports 43 files with no offenses. Other switcher UX and visibility coverage in item 4 remains separate work.
 
 ## 2. Validate preview input before calling `to_sym`
 

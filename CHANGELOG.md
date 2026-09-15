@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Load the switcher helper explicitly before registering Rails load hooks, preventing `ActionVersionPreview::SwitcherHelper` errors when controllers or views load early during boot and asset precompilation.
+- Build switcher links from the current path and query parameters, preventing query keys from changing link destinations and excluding POST body fields from URLs.
 
 ### Added
 

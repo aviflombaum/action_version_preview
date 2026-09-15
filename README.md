@@ -59,6 +59,8 @@ The switcher automatically detects available variants by scanning the view direc
 
 Standard Rails variants (`mobile`, `tablet`, `phone`, `desktop`) are excluded from detection.
 
+Switcher links preserve the current path (including mounted prefixes) and query filters while changing only the configured preview parameter. The Default link removes that parameter.
+
 ## Configuration
 
 Zero config is the default. But if you need to customize:
