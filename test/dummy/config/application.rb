@@ -9,6 +9,8 @@ Bundler.require(*Rails.groups)
 module Dummy
   class Application < Rails::Application
     config.load_defaults Rails::VERSION::STRING.to_f
+    # Make the Rails default explicit for static analysis of this multi-version app.
+    config.action_controller.default_protect_from_forgery = true
 
     # For compatibility with applications that use this config
     config.action_controller.include_all_helpers = false
