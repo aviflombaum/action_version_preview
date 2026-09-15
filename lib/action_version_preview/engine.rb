@@ -1,4 +1,5 @@
 require "action_version_preview/controller_methods"
+require "action_version_preview/switcher_helper"
 
 module ActionVersionPreview
   class Engine < ::Rails::Engine

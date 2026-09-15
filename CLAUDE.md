@@ -35,7 +35,7 @@ bin/rails server
 - **`lib/action_version_preview.rb`** - Main module with configuration (`param_name`, `access_check`)
 - **`lib/action_version_preview/engine.rb`** - Rails engine that auto-includes ControllerMethods in ActionController::Base
 - **`lib/action_version_preview/controller_methods.rb`** - The concern with `before_action :set_view_variant` and helper methods (`current_variant`, `detected_variants`, `variant_preview_active?`, `can_preview_variants?`)
-- **`app/helpers/action_version_preview/switcher_helper.rb`** - Provides `variant_switcher` helper that renders the switcher partial
+- **`lib/action_version_preview/switcher_helper.rb`** - Provides `variant_switcher`; explicitly required by the engine so early Action View loading does not depend on Rails autoloading
 
 ### How It Works
 

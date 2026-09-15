@@ -4,7 +4,7 @@ Reviewed: 2026-09-15
 Source revision: `12d2743e7ab144eb76eaefa64fe4e0716ea53186`  
 Scope: the complete gem implementation, gemspec, current dependency resolution, tests, dummy application, CI, README, changelog, and feature suggestions.
 
-This is a research and implementation backlog. Recommendations below have not been applied. The working tree already contained changes to `Gemfile.lock`; this review used and preserved that resolution.
+This is a research and implementation backlog. The first-priority helper-loading fix has now been implemented locally for 0.2.0, as recorded below; the remaining recommendations have not been applied. The working tree already contained changes to `Gemfile.lock`; this review used and preserved that resolution.
 
 ## Summary
 
@@ -45,7 +45,8 @@ The engine-root command `bin/rails zeitwerk:check` was unrecognized; the namespa
 
 ## First priority: fix the published 0.1.0 boot failure for 0.2.0
 
-**Priority: P1 — release blocker, confirmed.**  
+**Priority: P1 — release blocker, confirmed. Implementation complete locally; pending 0.2.0 release.**
+
 Affected release: published `action_version_preview` **0.1.0**.  
 Incident: PostMoney staging Docker build, September 15, 2026 at 21:51:23, during `SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile`.
 
@@ -71,7 +72,15 @@ The current checkout contains commit `12d2743` ("Fix load order of helpers to no
 - Build and install the candidate gem into an isolated environment and run the boot/precompile checks against that artifact, rather than only the repository path dependency.
 - After boot, render `variant_switcher` with `include_all_helpers = false` to verify the fix retains helper availability; cover eager loading and development reloading as applicable.
 
-This fix and its packaged-gem regression coverage come before the remaining recommendations below.
+### Implementation update
+
+Implemented via [the load-order plan](../../plans/2026-09-15-fix-helper-load-order.md). The regression tests exposed a further failure in the previously reviewed checkout: when Action View was already loaded, its replacement load hook still resolved `SwitcherHelper` before main autoloading was ready. Three of the four new boot tests failed before the fix.
+
+The helper now lives in `lib/action_version_preview/switcher_helper.rb` and is explicitly required by the engine before hooks are registered. It remains a stable module across development reloads. Fresh-process tests cover early and lazy framework loading, rendering after reload, and a built/installed gem's production asset-precompile task with `SECRET_KEY_BASE_DUMMY=1`. The host renders the real engine partial with `include_all_helpers = false`, and package checks verify the engine and helper originate in the installed payload.
+
+The full suite now contains 18 tests and 45 assertions. Normal and CI/eager-loading runs pass, as do RuboCop and the Zeitwerk check. This validates the local implementation on Ruby 4.0.5 / Rails 8.1.3.1; PostMoney's full Docker build and the broader compatibility matrix remain unrun. No release has been published.
+
+This first-priority implementation is complete locally. The remaining recommendations below are still the 0.2.0 backlog.
 
 ## 1. Build switcher URLs from the current path and query data
 
