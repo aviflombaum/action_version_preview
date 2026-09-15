@@ -10,12 +10,14 @@ Gem::Specification.new do |spec|
   spec.description = "A zero-config Rails engine that leverages Rails' view variants to let you preview different versions of your UI simultaneously. Perfect for A/B design comparisons, UI iterations, and collecting feedback on redesigns."
   spec.license     = "MIT"
 
-  spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/aviflombaum/action_version_preview"
   spec.metadata["changelog_uri"] = "https://github.com/aviflombaum/action_version_preview/blob/main/CHANGELOG.md"
+  spec.metadata["documentation_uri"] = "https://github.com/aviflombaum/action_version_preview/blob/main/docs/usage.md"
+  spec.metadata["bug_tracker_uri"] = "https://github.com/aviflombaum/action_version_preview/issues"
 
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
-    Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
+    Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md", "CHANGELOG.md",
+        "docs/usage.md", "docs/releasing.md", "docs/releases/*.md"].select { |file| File.file?(file) }
   end
 
   spec.required_ruby_version = ">= 3.1.0"

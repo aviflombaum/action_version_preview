@@ -1,122 +1,136 @@
 # ActionVersionPreview
 
-Preview multiple versions of your UI simultaneously using Rails' built-in view variants. No feature flags, no complex setup. Just create variant templates and visit them via URL.
+Preview multiple versions of a Rails UI in separate browser tabs using native
+view variants. Add variant templates, open their URLs, and compare designs while
+signed in as the same user. No additional database, feature-flag service, or
+JavaScript is required.
 
-## Why?
+[Full usage guide](docs/usage.md) · [Changelog](CHANGELOG.md) · [RubyGems](https://rubygems.org/gems/action_version_preview)
 
-Feature flag gems like Flipper are designed for toggling features on/off for users, not for showing multiple versions at once. For design iterations and feedback collection, you want to open three browser tabs side by side, each showing a different version, all logged in as the same user.
+## Install
 
-ActionVersionPreview makes this trivial using Rails' native view variants.
-
-<img width="2146" height="2014" alt="image" src="https://github.com/user-attachments/assets/c39b1305-ad14-4958-be39-d714d53d1990" />
-
-[Read more about why I built this...](https://code.avi.nyc/design-previews-for-ruby-on-rails)
-
-## Installation
-
-Add to your Gemfile:
+Add the gem to your Rails application's Gemfile:
 
 ```ruby
-gem "action_version_preview"
+gem "action_version_preview", "~> 0.2.0"
 ```
 
-Run `bundle install`. That's it. The concern is automatically included in all controllers.
+Run `bundle install` and restart the application. No generator or engine mount is
+needed. Preview selection is added to controllers inheriting from
+`ActionController::Base`.
 
-## Usage
+## Quick start
 
-### 1. Create Variant Templates
+### 1. Create variant templates
 
-Rails looks for variant templates using this naming convention:
+For a `DashboardController#show` action, keep a default template and add variants:
 
-```
-app/views/dashboard/show.html.erb           # default
-app/views/dashboard/show.html+v2.erb        # variant :v2
-app/views/dashboard/show.html+redesign.erb  # variant :redesign
-```
-
-This works for layouts, partials, mailers, and ViewComponent templates too.
-
-### 2. Visit the Variant URL
-
-```
-/dashboard           # renders show.html.erb
-/dashboard?vv=v2     # renders show.html+v2.erb
-/dashboard?vv=true   # renders default, but activates the switcher
+```text
+app/views/dashboard/show.html.erb
+app/views/dashboard/show.html+v2.erb
+app/views/dashboard/show.html+redesign.erb
 ```
 
-### 3. Add the Variant Switcher (Optional)
+Use names such as `v2`, `redesign`, or `new_layout` for automatic switcher discovery.
 
-Drop the built-in switcher widget in your layout:
+### 2. Open the preview URLs
+
+In development or test:
+
+| URL | Result |
+| --- | --- |
+| `/dashboard` | Normal rendering |
+| `/dashboard?vv=v2` | Selects the `v2` variant |
+| `/dashboard?vv=redesign` | Selects the `redesign` variant |
+| `/dashboard?vv=true` | Enables the switcher without selecting a variant |
+
+The last example keeps any variant your application already set, such as a mobile
+variant. Otherwise it renders the default template.
+
+### 3. Add the optional switcher
+
+Put this near the end of your application layout's body:
 
 ```erb
 <%= variant_switcher %>
 ```
 
-The switcher automatically detects available variants by scanning the view directory for `+variant` template files. It only appears when:
-- The `vv` param is present in the URL (e.g., `?vv=true` or `?vv=v2`)
-- The current action has variant templates available
-- The user can preview variants (dev/test by default)
+The switcher appears only when preview mode is requested, access is allowed, and
+variant templates are discovered for the current action. Its links preserve the
+current path, mounted prefix, and query filters. **Default** removes the preview
+parameter and closes the switcher. Add `?vv=true` again to reopen it.
 
-Standard Rails variants (`mobile`, `tablet`, `phone`, `desktop`) are excluded from detection.
+Automatic discovery in 0.2.0 covers HTML ERB action templates in the host app's
+`app/views/<controller_path>` directory. See the [discovery limits](docs/usage.md#template-discovery)
+for layouts, partials, other handlers, and engine views.
 
-Switcher links preserve the current path (including mounted prefixes) and query filters while changing only the configured preview parameter. The Default link removes that parameter.
+## Enable previews for your users
 
-## Configuration
-
-Zero config is the default. But if you need to customize:
+By default, previews are enabled only in development and test. Production,
+staging, and other environments deny preview selection until you configure access.
 
 ```ruby
 # config/initializers/action_version_preview.rb
 ActionVersionPreview.configure do |config|
-  # Change the URL parameter (default: :vv)
-  config.param_name = :v
-
-  # Control who can preview variants (default: dev/test only)
-  # In production, you might want admins only:
+  config.param_name = :vv # Optional; a string also works.
   config.access_check = ->(controller) {
-    Rails.env.development? ||
-    Rails.env.test? ||
-    controller.current_user&.admin?
+    Rails.env.development? || Rails.env.test? ||
+      (controller.respond_to?(:current_user, true) &&
+        controller.send(:current_user)&.admin?)
   }
 end
 ```
 
-## Helper Methods
+Adapt `current_user` and `admin?` to your authentication system. The example also
+works when `current_user` is private. Your user/context must be available when the
+preview callback runs; see [access control and callback order](docs/usage.md#access-control-and-callback-order).
 
-These are available in controllers and views:
+The preview parameter applies to one request. Links and redirects elsewhere in
+your app do not inherit it automatically. Ordinary application authorization still
+controls access to data and actions.
 
-| Method | Description |
-|--------|-------------|
-| `current_variant` | Returns the active variant symbol (e.g., `:v2`) or `nil` |
-| `detected_variants` | Returns array of variant names found for current action |
-| `variant_preview_active?` | Returns true if variant preview mode is active |
-| `can_preview_variants?` | Returns true if current user can access variants |
-| `variant_switcher` | Renders the switcher widget |
+## What's new in 0.2.0
 
-## How It Works
+- Fixes `ActionVersionPreview::SwitcherHelper` load-order errors during application
+  boot and asset precompilation, including early controller/view loading.
+- Keeps switcher links on the current request path. Query keys such as `host` and
+  `protocol` remain query data; POST body fields are not copied into URLs.
+- Adds boot, reload, packaged-gem precompilation, and switcher URL regression tests.
 
-Under the hood, ActionVersionPreview sets `request.variant` based on the URL parameter. Rails' template resolver then automatically looks for matching variant templates.
+To upgrade from 0.1.0, update your Gemfile constraint if necessary, run
+`bundle update action_version_preview`, and rebuild/restart the application.
+No migration or configuration change is required. Read the [0.2.0 release notes](docs/releases/0.2.0.md).
 
-When you visit `/dashboard?vv=v2`:
-1. The `before_action` extracts `vv=v2` from params
-2. It sets `request.variant = :v2`
-3. Rails renders `show.html+v2.erb` instead of `show.html.erb`
-4. The switcher detects all `show.html+*.erb` variants in the view directory
+## Compatibility
 
-## Comparison: Feature Flags vs View Variants
+- Declared requirements: Ruby **3.1+**, Rails **7.0 or later, below 9.0**.
+- Each Rails version may require a newer Ruby; the reviewed Rails 8.1 bundle
+  requires Ruby 3.2+.
+- Release validation used Ruby 4.0.5 with Rails 8.1.3.1. CI is configured for Ruby
+  3.4.7. A full matrix of the declared versions is not yet in place.
+- Automatic controller integration targets `ActionController::Base`, not API-only
+  controllers inheriting directly from `ActionController::API`.
 
-| Feature Flags (Flipper) | View Variants (This Gem) |
-|------------------------|--------------------------|
-| Toggle features on/off for users | Access all versions simultaneously |
-| One version "live" at a time | Side-by-side comparison in multiple tabs |
-| Percentage rollouts, A/B testing | Design iteration, feedback collection |
-| Requires database/Redis | Zero dependencies |
+## Development
 
-## Requirements
+```sh
+bundle install
+bin/rails test
+bin/rubocop
+RAILS_ENV=test bundle exec rake app:zeitwerk:check
+bundle exec rake build
+```
 
-- Rails 7.0+ or 8.x
-- Ruby 3.1+
+The test suite includes an isolated host that installs the built gem and compiles
+assets in production mode. See the [release procedure](docs/releasing.md) for
+security scans and publication.
+
+## Background
+
+[Why I built design previews for Rails](https://code.avi.nyc/design-previews-for-ruby-on-rails)
+
+<img width="2146" height="2014" alt="Several Rails UI variants displayed for comparison" src="https://github.com/user-attachments/assets/c39b1305-ad14-4958-be39-d714d53d1990" />
 
 ## License
 
-MIT License. See [MIT-LICENSE](MIT-LICENSE).
+[MIT License](MIT-LICENSE).

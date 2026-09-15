@@ -1,6 +1,6 @@
 # Feature Suggestions
 
-Ideas for future releases. These are intentionally not implemented in v1 to keep things simple.
+Ideas for future releases. These are not implemented in 0.2.0. For current behavior, see the [usage guide](docs/usage.md).
 
 ## Variant Persistence Across Navigation
 
@@ -26,7 +26,7 @@ ActionVersionPreview.configure do |config|
 end
 ```
 
-**Note:** Currently not a real security risk since Rails just falls back to the default template if a variant doesn't exist. Nothing is exposed.
+**Note:** This configuration is only a proposal. In 0.2.0, `access_check` controls preview selection, and an existing variant can be rendered directly even if its name is hidden from discovery. Keep normal application authorization in place.
 
 ## Variant Detection for Partials
 
@@ -35,6 +35,7 @@ Extend `detected_variants` to also scan for partial variants used in the current
 ## Stimulus Controller for Switcher
 
 Add optional JavaScript behavior:
+
 - Keyboard shortcut to toggle switcher visibility
 - Dropdown menu instead of inline buttons
 - Remember last used variant in localStorage

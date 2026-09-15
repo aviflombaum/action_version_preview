@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    action_version_preview (0.1.0)
+    action_version_preview (0.2.0)
       rails (>= 7.0, < 9.0)
 
 GEM
